@@ -14,9 +14,13 @@ public class AggregatorTest {
         Aggregator<Record> record1Aggregator = new Aggregator<>();
         Record r1 = new Record(10.5, 5, new BigDecimal(10), "PQR", null);
         Record r2 = new Record(10.5, 50, new BigDecimal(20), "PQR", Arrays.asList(new Integer[] { 1, 2 }));
+<<<<<<< HEAD
         Record r3 = new Record(10.5, 50, new BigDecimal(20), "ABC", Arrays.asList(new Integer[] { 1, 2 }));
         Record r4 = new Record(10.5, 100, new BigDecimal(40), "ABC", Arrays.asList(new Integer[] { 1, 2, 5 }));
         List<Record> records = Arrays.asList(new Record[] { r1, r2, r3, r4 });
+=======
+        List<Record> records = Arrays.asList(new Record[] { r1, r2 });
+>>>>>>> 72ccd6ad29bd0581aab13084e011b9316ae78720
 
         Collection<Record> aggregatedRecords = record1Aggregator.aggregate(records, "a,d");
         aggregatedRecords.stream().forEach(System.out::println);

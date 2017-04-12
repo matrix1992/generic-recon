@@ -25,8 +25,11 @@ import org.springframework.beans.PropertyAccessorFactory;
  */
 public class Aggregator<T> {
 
+<<<<<<< HEAD
     private static final String COMMA_STR = ",";
 
+=======
+>>>>>>> 72ccd6ad29bd0581aab13084e011b9316ae78720
     /**
      * Aggregates the records
      * 
@@ -42,7 +45,11 @@ public class Aggregator<T> {
         if (records == null || records.isEmpty())
             return records;
 
+<<<<<<< HEAD
         Set<String> keyFields = new HashSet<>(Arrays.asList(key.split(COMMA_STR)));
+=======
+        Set<String> keyFields = new HashSet<>(Arrays.asList(key.split(",")));
+>>>>>>> 72ccd6ad29bd0581aab13084e011b9316ae78720
 
         if (!isValidKey(records.get(0).getClass(), keyFields)) {
             throw new ImproperAggregationKeyException(key);
@@ -113,7 +120,11 @@ public class Aggregator<T> {
                 oldRecordPropertyAccessor.setPropertyValue(field, ((BigDecimal) oldObjVal).add((BigDecimal) currObjVal));
                 break;
             case STRING:
+<<<<<<< HEAD
                 oldRecordPropertyAccessor.setPropertyValue(field, (String) oldObjVal + COMMA_STR + (String) currObjVal);
+=======
+                oldRecordPropertyAccessor.setPropertyValue(field, (String) oldObjVal + (String) currObjVal);
+>>>>>>> 72ccd6ad29bd0581aab13084e011b9316ae78720
                 break;
             default:
                 break;
