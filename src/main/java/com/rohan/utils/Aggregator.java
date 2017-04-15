@@ -2,6 +2,7 @@ package com.rohan.utils;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -25,35 +26,50 @@ import org.springframework.beans.PropertyAccessorFactory;
  */
 public class Aggregator<T> {
 
-    private static final String COMMA_STR = ",";
-
     /**
-     * Aggregates the records
+     * Aggregates the records to a collection
      * 
      * @param records
      *            List of records to be aggregated
      * @param key
      *            Key for the aggregation
      * @return Collection of aggregated records
-     * @throws ImproperAggregationKeyException
+     * @throws ImproperSortKeyException
      *             Throws Exception of Improper Aggregation Key
      */
-    public Collection<T> aggregate(final List<T> records, final String key) throws ImproperAggregationKeyException {
+    public Collection<T> aggregateToList(final List<T> records, final String key) throws ImproperKeyException {
+        Map<List<Object>, T> aggregatedMap = aggregateToMap(records, key);
+        return aggregatedMap.values();
+    }
+
+    /**
+     * Aggregates the records to a map based on values of key
+     * 
+     * @param records
+     *            List of Records to be aggregated
+     * @param key
+     *            Aggregation Key
+     * @return Map from key to values
+     * @throws ImproperAggregationKeyException
+     *             Throws Exception of Improper Aggregation Key
+     * 
+     */
+    public Map<List<Object>, T> aggregateToMap(final List<T> records, final String key) throws ImproperKeyException {
         if (records == null || records.isEmpty())
-            return records;
+            return new HashMap<>();
 
-        Set<String> keyFields = new HashSet<>(Arrays.asList(key.split(COMMA_STR)));
+        Set<String> keyFields = new HashSet<>(Arrays.asList(key.split(ReconUtils.COMMA_STR)));
 
-        if (!isValidKey(records.get(0).getClass(), keyFields)) {
-            throw new ImproperAggregationKeyException(key);
+        if (!ReconUtils.isValidKey(records.get(0).getClass(), keyFields)) {
+            throw new ImproperKeyException("Improper Aggregation Key", key);
         }
 
         System.out.println("Start aggregating the records");
 
-        Map<Set<Object>, T> map = new HashMap<>();
+        Map<List<Object>, T> map = new HashMap<>();
 
         for (int i = 0; i < records.size(); i++) {
-            Set<Object> keyValues = getKeyValues(records.get(i), keyFields);
+            List<Object> keyValues = getKeyValues(records.get(i), keyFields);
             if (map.containsKey(keyValues)) {
                 T oldRecord = map.get(keyValues);
                 // aggregate the current record with the old record
@@ -64,7 +80,7 @@ public class Aggregator<T> {
         }
         System.out.println("Merged the records");
 
-        return map.values();
+        return map;
     }
 
     /*
@@ -113,7 +129,7 @@ public class Aggregator<T> {
                 oldRecordPropertyAccessor.setPropertyValue(field, ((BigDecimal) oldObjVal).add((BigDecimal) currObjVal));
                 break;
             case STRING:
-                oldRecordPropertyAccessor.setPropertyValue(field, (String) oldObjVal + COMMA_STR + (String) currObjVal);
+                oldRecordPropertyAccessor.setPropertyValue(field, (String) oldObjVal + ReconUtils.COMMA_STR + (String) currObjVal);
                 break;
             default:
                 break;
@@ -127,27 +143,13 @@ public class Aggregator<T> {
      * Helper method to accumulate the values of the Key Fields Specified, from
      * the record object
      */
-    private Set<Object> getKeyValues(final T record, final Set<String> keyFields) {
-        Set<Object> keyValues = new HashSet<>();
+    private List<Object> getKeyValues(final T record, final Set<String> keyFields) {
+        List<Object> keyValues = new ArrayList<>();
         PropertyAccessor recordPropertyAccessor = PropertyAccessorFactory.forBeanPropertyAccess(record);
         for (String keyField : keyFields) {
             keyValues.add(recordPropertyAccessor.getPropertyValue(keyField));
         }
         return keyValues;
-    }
-
-    /*
-     * Validates if the key is proper for the class
-     */
-    private boolean isValidKey(final Class<?> clazz, final Set<String> keyFields) {
-
-        Set<String> temp = new HashSet<>(keyFields);
-
-        Set<String> applicableFields = Arrays.stream(clazz.getDeclaredFields()).map(field -> field.getName()).collect(Collectors.toSet());
-
-        temp.removeAll(applicableFields);
-
-        return temp.size() == 0;
     }
 
 }
@@ -182,34 +184,6 @@ enum JavaType {
 
     String getJavaClassName() {
         return this.javaClassName;
-    }
-
-}
-
-/**
- * Custom Exception class for indicating an incorrect aggregation key
- * 
- * @author piyush
- *
- */
-class ImproperAggregationKeyException extends Exception {
-
-    String message = null;
-
-    private static final long serialVersionUID = 5427721028775303056L;
-
-    public ImproperAggregationKeyException(String key) {
-        this.message = "Improper Aggregation Key " + key;
-    }
-
-    @Override
-    public String toString() {
-        return message;
-    }
-
-    @Override
-    public String getMessage() {
-        return message;
     }
 
 }
