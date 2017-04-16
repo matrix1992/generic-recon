@@ -1,4 +1,4 @@
-package com.rohan.utils;
+package com.rohan.recon;
 
 /**
  * Custom Exception class for indicating an incorrect key

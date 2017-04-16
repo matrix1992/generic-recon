@@ -1,4 +1,4 @@
-package com.rohan.utils;
+package com.rohan.recon;
 
 @FunctionalInterface
 public interface Evaluator<S1, S2, R> {
