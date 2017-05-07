@@ -1,5 +1,6 @@
 package com.rohan.recon;
 
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -12,6 +13,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.apache.commons.beanutils.BeanUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.PropertyAccessor;
 import org.springframework.beans.PropertyAccessorFactory;
 
@@ -33,12 +36,17 @@ public class Aggregator<T> {
      *            List of records to be aggregated
      * @param key
      *            Key for the aggregation
-     * @return Collection of aggregated records
+     * @return Collection of aggregated & constituent record pairs
+     * @throws NoSuchMethodException
+     * @throws InvocationTargetException
+     * @throws InstantiationException
+     * @throws IllegalAccessException
      * @throws ImproperSortKeyException
      *             Throws Exception of Improper Aggregation Key
      */
-    public Collection<T> aggregateToList(final List<T> records, final String key) throws ImproperKeyException {
-        Map<List<Object>, T> aggregatedMap = aggregateToMap(records, key);
+    public Collection<Pair<T, List<T>>> aggregateToList(final List<T> records, final String key) throws ImproperKeyException, IllegalAccessException,
+            InstantiationException, InvocationTargetException, NoSuchMethodException {
+        Map<List<Object>, Pair<T, List<T>>> aggregatedMap = aggregateToMap(records, key);
         return aggregatedMap.values();
     }
 
@@ -49,12 +57,17 @@ public class Aggregator<T> {
      *            List of Records to be aggregated
      * @param key
      *            Aggregation Key
-     * @return Map from key to values
+     * @return Map from key to Pair of aggregated records & individual records
+     * @throws NoSuchMethodException
+     * @throws InvocationTargetException
+     * @throws InstantiationException
+     * @throws IllegalAccessException
      * @throws ImproperAggregationKeyException
      *             Throws Exception of Improper Aggregation Key
      * 
      */
-    public Map<List<Object>, T> aggregateToMap(final List<T> records, final String key) throws ImproperKeyException {
+    public Map<List<Object>, Pair<T, List<T>>> aggregateToMap(final List<T> records, final String key) throws ImproperKeyException,
+            IllegalAccessException, InstantiationException, InvocationTargetException, NoSuchMethodException {
         if (records == null || records.isEmpty())
             return new HashMap<>();
 
@@ -66,16 +79,24 @@ public class Aggregator<T> {
 
         System.out.println("Start aggregating the records");
 
-        Map<List<Object>, T> map = new HashMap<>();
+        Map<List<Object>, Pair<T, List<T>>> map = new HashMap<>();
 
         for (int i = 0; i < records.size(); i++) {
             List<Object> keyValues = getKeyValues(records.get(i), keyFields);
             if (map.containsKey(keyValues)) {
-                T oldRecord = map.get(keyValues);
-                // aggregate the current record with the old record
-                mergeRecords(records.get(i), oldRecord, keyFields);
+                T oldAggregatedRecord = map.get(keyValues).getLeft();
+                // aggregate the current record with the old record, and add the
+                // new record to the aggregated records list
+                mergeRecords(records.get(i), oldAggregatedRecord, keyFields);
+                map.get(keyValues).getRight().add(records.get(i));
             } else {
-                map.put(keyValues, records.get(i));
+                @SuppressWarnings("unchecked")
+                // Do not tamper the original record, make a copy
+                T copyOfRecord = (T) BeanUtils.cloneBean(records.get(i));
+                List<T> constituentRecords = new ArrayList<>();
+                constituentRecords.add(records.get(i));
+                Pair<T, List<T>> aggregatedRecordsPair = Pair.of(copyOfRecord, constituentRecords);
+                map.put(keyValues, aggregatedRecordsPair);
             }
         }
         System.out.println("Merged the records");
